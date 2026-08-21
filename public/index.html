@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora Grand Hotel — In-Room Dining</title>
+<meta name="description" content="Order breakfast, lunch and dinner to your room.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<div class="demo-ribbon" role="note">
+  <strong>Demo</strong> · Simulated payments — never enter real card details
+</div>
+
+<header class="topbar" id="topbar" hidden>
+  <div class="topbar-inner">
+    <a class="brand" href="#">
+      <span class="brand-mark" aria-hidden="true">AG</span>
+      <span class="brand-text">
+        <span class="brand-name">Aurora Grand</span>
+        <span class="brand-tagline" data-i18n="brand.tagline">In-Room Dining</span>
+      </span>
+    </a>
+
+    <nav class="topnav">
+      <button class="navlink is-active" data-view="menu" data-i18n="nav.menu">Menu</button>
+      <button class="navlink" data-view="orders" data-i18n="nav.orders">My orders</button>
+    </nav>
+
+    <div class="topbar-actions">
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang="en" class="lang-btn is-active">EN</button>
+        <span class="lang-sep" aria-hidden="true">|</span>
+        <button type="button" data-lang="ru" class="lang-btn">RU</button>
+      </div>
+      <span class="room-chip"><span data-i18n="nav.room">Room</span> <strong id="roomChip">—</strong></span>
+      <button class="btn-ghost" id="signOutBtn" data-i18n="nav.signOut">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ===================== LOGIN ===================== -->
+  <section class="view view-login is-visible" id="view-login">
+    <div class="login-shell">
+      <div class="login-brand">
+        <span class="brand-mark lg" aria-hidden="true">AG</span>
+        <h1 class="serif">Aurora Grand</h1>
+        <p class="brand-tagline" data-i18n="brand.tagline">In-Room Dining</p>
+      </div>
+
+      <div class="card login-card">
+        <div class="lang-toggle standalone" role="group" aria-label="Language">
+          <button type="button" data-lang="en" class="lang-btn is-active">EN</button>
+          <span class="lang-sep" aria-hidden="true">|</span>
+          <button type="button" data-lang="ru" class="lang-btn">RU</button>
+        </div>
+
+        <h2 class="serif card-title" data-i18n="login.title">Welcome</h2>
+        <p class="muted" data-i18n="login.intro">Please confirm your stay details to view today’s menu.</p>
+
+        <form id="loginForm" class="form" novalidate>
+          <label class="field">
+            <span class="field-label" data-i18n="login.fullName">Full name</span>
+            <input name="fullName" type="text" autocomplete="name" required>
+          </label>
+
+          <div class="field-row">
+            <label class="field">
+              <span class="field-label" data-i18n="login.room">Room number</span>
+              <input name="roomNumber" type="text" inputmode="numeric" required>
+            </label>
+            <label class="field">
+              <span class="field-label" data-i18n="login.phone">Phone number</span>
+              <input name="phone" type="tel" autocomplete="tel" required>
+            </label>
+          </div>
+
+          <div class="field-row">
+            <label class="field">
+              <span class="field-label" data-i18n="login.checkIn">Check-in date</span>
+              <input name="checkIn" type="date" required>
+            </label>
+            <label class="field">
+              <span class="field-label" data-i18n="login.checkOut">Check-out date</span>
+              <input name="checkOut" type="date" required>
+            </label>
+          </div>
+
+          <p class="hint" data-i18n="login.help">All five fields must match your reservation exactly.</p>
+
+          <div class="alert alert-error" id="loginError" hidden role="alert"></div>
+
+          <button type="submit" class="btn-primary btn-block" id="loginSubmit" data-i18n="login.submit">
+            View the menu
+          </button>
+        </form>
+
+        <div class="demo-hint">
+          <span data-i18n="login.demoTitle">Demo stay</span>
+          <button type="button" class="btn-link" id="fillDemo" data-i18n="login.demoFill">Fill demo guest</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MENU ===================== -->
+  <section class="view view-menu" id="view-menu">
+    <div class="page">
+      <div class="page-head">
+        <div>
+          <h1 class="serif page-title" data-i18n="menu.title">Today’s Menu</h1>
+          <p class="muted" id="menuDateLabel"></p>
+        </div>
+        <div class="date-nav">
+          <button class="btn-ghost icon" id="prevDay" aria-label="Previous day">&larr;</button>
+          <input type="date" id="datePicker" class="date-input">
+          <button class="btn-ghost icon" id="nextDay" aria-label="Next day">&rarr;</button>
+        </div>
+      </div>
+
+      <div id="mealList" class="meal-list"></div>
+    </div>
+
+    <!-- cart drawer -->
+    <aside class="cart" id="cart" hidden aria-live="polite">
+      <div class="cart-inner">
+        <div class="cart-head">
+          <h2 class="serif" data-i18n="cart.title">Your order</h2>
+          <span class="cart-meal" id="cartMeal"></span>
+        </div>
+        <div id="cartLines" class="cart-lines"></div>
+        <dl class="totals">
+          <div><dt data-i18n="cart.subtotal">Subtotal (net)</dt><dd id="cartSubtotal">—</dd></div>
+          <div><dt id="cartVatLabel">VAT</dt><dd id="cartVat">—</dd></div>
+          <div class="grand"><dt data-i18n="cart.total">Total</dt><dd id="cartTotal">—</dd></div>
+        </dl>
+        <button class="btn-primary btn-block" id="toPayment" data-i18n="cart.continue">Continue to payment</button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ===================== PAYMENT ===================== -->
+  <section class="view view-pay" id="view-pay">
+    <div class="page narrow">
+      <button class="btn-link back" id="payBack" data-i18n="cart.back">Back to menu</button>
+      <h1 class="serif page-title" data-i18n="pay.title">Payment</h1>
+
+      <div class="card">
+        <div class="summary-head">
+          <span class="summary-meal serif" id="paySummaryMeal"></span>
+          <span class="summary-date" id="paySummaryDate"></span>
+        </div>
+        <div id="payLines" class="cart-lines"></div>
+        <dl class="totals">
+          <div><dt data-i18n="cart.subtotal">Subtotal (net)</dt><dd id="paySubtotal">—</dd></div>
+          <div><dt id="payVatLabel">VAT</dt><dd id="payVat">—</dd></div>
+          <div class="grand"><dt data-i18n="cart.total">Total</dt><dd id="payTotal">—</dd></div>
+        </dl>
+
+        <label class="field">
+          <span class="field-label" data-i18n="cart.note">Note for the kitchen (optional)</span>
+          <input type="text" id="orderNote" maxlength="300"
+                 data-i18n="cart.notePlaceholder" data-i18n-attr="placeholder">
+        </label>
+      </div>
+
+      <h2 class="section-label" data-i18n="pay.chooseMethod">How would you like to pay?</h2>
+
+      <div class="method-grid">
+        <button class="method is-selected" data-method="card">
+          <span class="method-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M2 10h20" stroke="currentColor" stroke-width="1.7"/></svg>
+          </span>
+          <span class="method-title" data-i18n="pay.card">Pay by card</span>
+          <span class="method-hint" data-i18n="pay.cardHint">Secured by 3-D Secure 2.0.</span>
+        </button>
+
+        <button class="method" data-method="cash">
+          <span class="method-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+          </span>
+          <span class="method-title" data-i18n="pay.cash">Pay cash at Reception</span>
+          <span class="method-hint" data-i18n="pay.cashHint">We hold your order until Reception records payment.</span>
+        </button>
+      </div>
+
+      <div class="card card-cards" id="cardPanel">
+        <p class="alert alert-warn" data-i18n="pay.demoBanner">
+          Demo — payments are simulated. Never enter real card details.
+        </p>
+        <label class="field">
+          <span class="field-label" data-i18n="pay.testCard">Test card</span>
+          <select id="testCard" class="select"></select>
+        </label>
+      </div>
+
+      <div class="alert alert-error" id="payError" hidden role="alert"></div>
+
+      <button class="btn-primary btn-block btn-lg" id="confirmPay" data-i18n="pay.confirmCard">Pay now</button>
+    </div>
+  </section>
+
+  <!-- ===================== CONFIRMATION ===================== -->
+  <section class="view view-done" id="view-done">
+    <div class="page narrow">
+      <div class="card done-card">
+        <div class="done-icon" id="doneIcon" aria-hidden="true"></div>
+        <h1 class="serif" id="doneTitle">Payment confirmed</h1>
+        <p class="muted" id="doneMessage"></p>
+
+        <div class="done-meta">
+          <div><span data-i18n="done.orderId">Order</span><strong id="doneOrderId">—</strong></div>
+          <div><span data-i18n="cart.total">Total</span><strong id="doneTotal">—</strong></div>
+        </div>
+
+        <div class="voucher" id="doneVoucher" hidden>
+          <span data-i18n="done.voucherCode">Voucher code</span>
+          <code id="doneVoucherCode"></code>
+        </div>
+
+        <a class="btn-primary btn-block" id="downloadReceipt" href="#" download>Download receipt (PDF)</a>
+        <button class="btn-ghost btn-block" id="doneBack" data-i18n="done.backToMenu">Back to menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ORDERS ===================== -->
+  <section class="view view-orders" id="view-orders">
+    <div class="page">
+      <h1 class="serif page-title" data-i18n="orders.title">My orders</h1>
+      <div id="ordersList" class="orders-list"></div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="/js/i18n.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
