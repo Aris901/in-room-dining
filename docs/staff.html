@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Staff Portal — Aurora Grand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/staff.css">
+</head>
+<body class="staff">
+<div class="demo-ribbon" role="note">
+  <strong>Browser demo</strong> · runs entirely on this page — no server, no real payments ·
+  <a href="https://github.com/Aris901/in-room-dining" target="_blank" rel="noopener">full-stack source</a>
+  · <a href="staff.html">staff portal</a>
+  · <button type="button" id="demoReset">reset demo</button>
+</div>
+
+<!-- ===================== LOGIN ===================== -->
+<section class="view is-visible" id="view-login">
+  <div class="staff-login">
+    <div class="card login-card">
+      <div class="staff-badge" aria-hidden="true">STAFF</div>
+      <h1 class="serif card-title">Staff Portal</h1>
+      <p class="muted">Authorised personnel only.</p>
+
+      <form id="staffLoginForm" class="form" novalidate>
+        <label class="field">
+          <span class="field-label">Username</span>
+          <input name="username" type="text" autocomplete="username" required>
+        </label>
+        <label class="field">
+          <span class="field-label">Password</span>
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+
+        <div class="alert alert-error" id="staffLoginError" hidden role="alert"></div>
+
+        <button type="submit" class="btn-primary btn-block" id="staffLoginSubmit">Sign in</button>
+      </form>
+
+      <details class="demo-creds">
+        <summary>Demo credentials</summary>
+        <ul>
+          <li><code>chef</code> / <code>chef1234</code> — menus &amp; prices</li>
+          <li><code>reception</code> / <code>front1234</code> — take cash, cancel</li>
+          <li><code>manager</code> / <code>manage1234</code> — everything</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== APP ===================== -->
+<div id="staffApp" hidden>
+
+  <header class="topbar staff-topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="staff.html">
+        <span class="brand-mark" aria-hidden="true">AG</span>
+        <span class="brand-text">
+          <span class="brand-name">Aurora Grand</span>
+          <span class="brand-tagline">Staff Portal</span>
+        </span>
+      </a>
+
+      <nav class="topnav">
+        <button class="navlink is-active" data-view="board">Kitchen board</button>
+        <button class="navlink" data-view="menus">Menu manager</button>
+      </nav>
+
+      <div class="topbar-actions">
+        <span class="room-chip"><strong id="staffName">—</strong> · <span id="staffRole"></span></span>
+        <button class="btn-ghost" id="staffSignOut">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ---------- kitchen board ---------- -->
+  <section class="view is-visible" id="view-board">
+    <div class="page">
+      <div class="page-head">
+        <div>
+          <h1 class="serif page-title">Kitchen Order Board</h1>
+          <p class="muted" id="boardDateLabel"></p>
+        </div>
+        <div class="date-nav">
+          <input type="date" id="boardDate" class="date-input">
+          <button class="btn-ghost" id="boardRefresh">Refresh</button>
+        </div>
+      </div>
+
+      <div class="stat-row" id="boardStats"></div>
+
+      <div class="window-tabs" id="windowTabs"></div>
+
+      <div id="boardOrders" class="board-grid"></div>
+    </div>
+  </section>
+
+  <!-- ---------- menu manager ---------- -->
+  <section class="view" id="view-menus">
+    <div class="page">
+      <div class="page-head">
+        <div>
+          <h1 class="serif page-title">Daily Menu Manager</h1>
+          <p class="muted">Set the rotating fixed menu and its prices. Prices are in roubles.</p>
+        </div>
+        <div class="date-nav">
+          <input type="date" id="menuDate" class="date-input">
+          <select id="menuMeal" class="select">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="alert alert-warn" id="menuLockNotice" hidden></div>
+
+      <div class="card">
+        <div class="editor-head">
+          <label class="switch">
+            <input type="checkbox" id="menuPublished">
+            <span>Published &amp; visible to guests</span>
+          </label>
+          <button class="btn-ghost" id="addDish">+ Add dish</button>
+        </div>
+
+        <div id="dishEditor" class="dish-editor"></div>
+
+        <div class="alert alert-error" id="menuError" hidden role="alert"></div>
+
+        <div class="editor-foot">
+          <span class="hint" id="menuSavedHint"></span>
+          <button class="btn-primary" id="saveMenu">Save menu</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="js/domain/time.js"></script>
+<script src="js/domain/money.js"></script>
+<script src="js/demo/store.js"></script>
+<script src="js/demo/documents.js"></script>
+<script src="js/demo/xlsx.js"></script>
+<script src="js/demo/api.js"></script>
+<script src="js/staff.js"></script>
+</body>
+</html>

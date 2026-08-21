@@ -8,6 +8,37 @@ portal with Excel reporting.
 > fictional. **Payments are simulated** — there is no gateway, no card data is
 > ever accepted or stored, and no money moves.
 
+**▶ Try it live: <https://aris901.github.io/in-room-dining/>**
+· [staff portal](https://aris901.github.io/in-room-dining/staff.html)
+
+---
+
+## Two builds
+
+| | Full-stack app | Browser demo (`docs/`) |
+| --- | --- | --- |
+| Runs on | Node + SQLite | GitHub Pages, no server |
+| Purpose | The real architecture | A clickable link |
+| Auth | HMAC session cookies | Same checks, held in `localStorage` |
+| Deadlines & money | `src/time.js`, `src/money.js` | **The same two files**, re-emitted for the browser |
+| Receipts | PDF via pdfkit + embedded Cyrillic font | Print-ready page → browser "Save as PDF" |
+| Excel | `exceljs` | Hand-written minimal `.xlsx` writer |
+
+The demo exists because GitHub Pages cannot run Node. It is **not** a
+reimplementation: `npm run build:demo` reads `src/time.js` and `src/money.js`,
+strips their CommonJS export, and re-emits them as browser globals, so the
+deadline and rounding rules cannot drift between the two builds. The guest and
+staff front ends are copied **byte-for-byte** — the demo works by patching
+`window.fetch`, not by forking the UI.
+
+`tests/demo.test.js` runs the demo in a sandboxed DOM and asserts it enforces
+the same rules: late orders refused, prices taken from the store rather than the
+request, cash held out of the kitchen queue, staff roles honoured.
+
+> The demo trusts the browser, because in a static build there is nowhere else
+> to put the logic. That is exactly why the real build exists — and why the
+> server re-checks every one of these rules server-side.
+
 ---
 
 ## Running it
@@ -35,7 +66,8 @@ npm start        # http://localhost:3000
 | `manager` | `manage1234` | manager | Everything |
 
 ```bash
-npm test         # 41 unit + integration tests
+npm test          # 52 tests: domain, API integration, and the browser demo
+npm run build:demo   # regenerate docs/ (the static GitHub Pages demo)
 ```
 
 ---
@@ -58,8 +90,11 @@ src/
     payment-gateway.js    SIMULATED authorisation — swap this one file
     receipt-pdf.js        PDF receipts and cash vouchers
     report-xlsx.js        Excel order summary
+  js/demo/                browser-demo runtime (mock API, docs, xlsx writer)
 public/                   guest app (vanilla JS, no build step)
 views/staff.html          staff shell, deliberately outside the static tree
+scripts/build-demo.js     generates docs/ from src/ + public/
+docs/                     GENERATED — the static demo GitHub Pages serves
 ```
 
 ---

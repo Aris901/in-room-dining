@@ -6,6 +6,10 @@
  * Runs on an isolated database file so it never touches demo data.
  */
 
+// Declared here rather than in the npm script so the suite behaves the same
+// on every platform. NODE_ENV=test only raises the brute-force limits, which
+// would otherwise reject the repeated logins these tests perform.
+process.env.NODE_ENV = 'test';
 process.env.DB_PATH = require('path').join(__dirname, 'tmp-test.db');
 
 const test = require('node:test');
