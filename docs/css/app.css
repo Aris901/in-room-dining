@@ -807,3 +807,14 @@ img, video, table { max-width: 100%; }
   .topbar-actions { flex-wrap: wrap; }
   .lang-toggle { order: -1; }
 }
+
+/* Host facts (cold start, daily reset). Hidden unless /api/runtime says so. */
+.runtime-note {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-bottom: 1px solid var(--gold-line);
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  padding: 0.55rem clamp(1rem, 4vw, 2rem);
+}

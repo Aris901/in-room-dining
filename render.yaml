@@ -1,0 +1,38 @@
+# Render deployment.
+#
+# IMPORTANT: Render's free tier cannot attach a persistent disk, so SQLite
+# data is lost on every redeploy, restart and idle spin-down. That fails the
+# "order survives a redeploy" check outright. This blueprint therefore
+# specifies a paid Starter instance with a disk attached.
+#
+# If you want to stay free, use a host whose free tier includes a volume
+# (see DEPLOYING.md) rather than deploying this to Render's free plan.
+
+services:
+  - type: web
+    name: in-room-dining
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter          # free has no disks — see the note above
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: DB_PATH
+        value: /data/dining.db
+      - key: HOTEL_TZ
+        value: Europe/Moscow
+      - key: DEMO_MODE
+        value: "on"
+      - key: DEMO_RESET
+        value: "on"
+      - key: DEMO_RESET_HOUR
+        value: "4"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: STAFF_SESSION_SECRET
+        generateValue: true
+    disk:
+      name: dining-data
+      mountPath: /data
+      sizeGB: 1

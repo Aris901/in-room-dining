@@ -71,6 +71,22 @@ const config = {
    * reviewer can sign in. Set DEMO_MODE=off to disable.
    */
   isDemo: process.env.DEMO_MODE !== 'off',
+
+  /**
+   * Wipe and re-seed the demo on a schedule so a public instance does not
+   * fill with junk orders. Off by default; deployments turn it on. Hosts with
+   * their own cron can leave it off and call `npm run reset` instead.
+   */
+  demoReset: process.env.DEMO_RESET === 'on',
+  demoResetHour: Math.min(23, Math.max(0, Number(process.env.DEMO_RESET_HOUR ?? 4))),
+
+  /**
+   * Free tiers commonly sleep when idle. When this is on the UI warns that a
+   * first load can be slow, so a visitor waiting on a cold start knows the
+   * app is not broken. It is opt-in because claiming it on a host that does
+   * not sleep would be its own small untruth.
+   */
+  hostSleeps: process.env.HOST_SLEEPS === 'on',
 };
 
 /** Refuse to start in production with development secrets in place. */

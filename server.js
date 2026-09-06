@@ -72,6 +72,22 @@ app.use(
 
 app.get('/health', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
+/**
+ * Public runtime facts the UI needs before anyone signs in — chiefly whether
+ * this host sleeps when idle, so the page can say so rather than leaving a
+ * visitor staring at a cold start wondering if it is broken.
+ */
+app.get('/api/runtime', (req, res) => {
+  res.json({
+    demo: config.isDemo,
+    paymentsSimulated: config.paymentsAreSimulated,
+    hostSleeps: config.hostSleeps,
+    resetsDaily: config.demoReset,
+    resetHour: config.demoResetHour,
+    timeZone: config.hotelTimeZone,
+  });
+});
+
 // --- Errors ---------------------------------------------------------------
 
 app.use((req, res) => {
@@ -87,16 +103,29 @@ app.use((err, req, res, next) => {
   res.status(500).json(payload);
 });
 
-if (require.main === module) {
-  app.listen(config.port, () => {
+/**
+ * Bind and report. Exported so the production entrypoint can seed the
+ * database and start the reset scheduler before the first request lands.
+ */
+function start() {
+  return app.listen(config.port, '0.0.0.0', () => {
     console.log(`\n  ${config.hotel.name} — In-Room Dining`);
+    console.log(`  Listening     0.0.0.0:${config.port}`);
     console.log(`  Guest app     http://localhost:${config.port}/`);
     console.log(`  Staff portal  http://localhost:${config.port}/staff-portal`);
     console.log(`  Timezone      ${config.hotelTimeZone}`);
+    console.log(`  Database      ${config.paths.db}`);
     if (config.paymentsAreSimulated) {
-      console.log('  Payments      SIMULATED — no gateway, no real cards\n');
+      console.log('  Payments      SIMULATED — no gateway, no real cards');
     }
+    if (config.hostSleeps) {
+      console.log('  Host          sleeps when idle (disclosed in the UI)');
+    }
+    console.log('');
   });
 }
 
+if (require.main === module) start();
+
 module.exports = app;
+module.exports.start = start;

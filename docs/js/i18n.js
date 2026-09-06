@@ -100,6 +100,9 @@
       'error.closed': 'That meal closed while you were ordering. Please contact Reception.',
       'error.duplicate': 'You already have an order for this meal.',
 
+      'runtime.coldStart': 'This demo runs on a free tier that sleeps when idle. The first load after a quiet spell can take up to a minute — it is starting up, not broken.',
+      'runtime.dailyReset': 'Demo data is wiped and re-seeded daily, so anything you order here is temporary.',
+
       'time.days': 'd',
       'time.hours': 'h',
       'time.minutes': 'm',
@@ -202,6 +205,9 @@
       'error.generic': 'Что-то пошло не так. Попробуйте ещё раз.',
       'error.closed': 'Приём заказов закрылся, пока вы оформляли. Обратитесь на ресепшн.',
       'error.duplicate': 'У вас уже есть заказ на этот приём пищи.',
+
+      'runtime.coldStart': 'Демо работает на бесплатном тарифе, который засыпает при простое. Первая загрузка после паузы может занять до минуты — это запуск, а не ошибка.',
+      'runtime.dailyReset': 'Демо-данные ежедневно очищаются и создаются заново, поэтому любой заказ здесь временный.',
 
       'time.days': 'д',
       'time.hours': 'ч',

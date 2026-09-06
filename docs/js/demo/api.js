@@ -90,6 +90,17 @@
   // ---- route table -------------------------------------------------------
 
   const routes = [
+    // The static build runs entirely in the browser: nothing to sleep, and
+    // no nightly reset. Answering honestly beats a 404 in the console.
+    ['GET', /^\/api\/runtime$/, () => ok({
+      demo: true,
+      paymentsSimulated: true,
+      hostSleeps: false,
+      resetsDaily: false,
+      resetHour: null,
+      timeZone: 'Europe/Moscow',
+    })],
+
     // ------------------------------------------------ guest session
     ['POST', /^\/api\/guest\/login$/, (m, body) => {
       const { fullName, roomNumber, phone, checkIn, checkOut } = body ?? {};

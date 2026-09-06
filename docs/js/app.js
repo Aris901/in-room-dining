@@ -764,8 +764,41 @@
   // Boot
   // -------------------------------------------------------------------------
 
+  /**
+   * Surfaces host facts a visitor needs before they can judge the app:
+   * a cold start on a sleeping free tier looks identical to a broken site.
+   * Silent unless the deployment actually reports these.
+   */
+  async function showRuntimeNotice() {
+    const el = $('#runtimeNote');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/runtime');
+      if (!res.ok) return;
+      const runtime = await res.json();
+
+      const lines = [];
+      if (runtime.hostSleeps) lines.push(t().t('runtime.coldStart'));
+      if (runtime.resetsDaily) lines.push(t().t('runtime.dailyReset'));
+      if (lines.length === 0) return;
+
+      el.textContent = lines.join(' ');
+      el.hidden = false;
+      el.dataset.keys = JSON.stringify(
+        [runtime.hostSleeps && 'runtime.coldStart', runtime.resetsDaily && 'runtime.dailyReset'].filter(Boolean)
+      );
+    } catch { /* static build or offline: no notice, no error */ }
+  }
+
+  document.addEventListener('languagechange', () => {
+    const el = $('#runtimeNote');
+    if (!el || el.hidden || !el.dataset.keys) return;
+    el.textContent = JSON.parse(el.dataset.keys).map((k) => t().t(k)).join(' ');
+  });
+
   (async function boot() {
     t().init();
+    showRuntimeNotice();
     try {
       const res = await api('GET', '/api/guest/session');
       state.guest = res.guest;
