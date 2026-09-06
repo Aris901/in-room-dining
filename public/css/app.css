@@ -709,3 +709,101 @@ button { font-family: inherit; font-size: inherit; }
   padding: 0;
 }
 .demo-ribbon button:hover { color: #fff; }
+
+/* ===========================================================
+   ORDER 3 — RESPONSIVE PASS (guest side + global guards)
+   Mobile-first: the narrow layout is the base, breakpoints add width.
+   =========================================================== */
+
+/* Guard against the classic phone overflow. */
+html, body { overflow-x: hidden; }
+img, video, table { max-width: 100%; }
+
+/* Every wide element, without exception, scrolls inside itself —
+   never the page body. */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* iOS zooms the viewport when a focused input is under 16px. Holding the
+   inputs at 16px is what prevents that jump; it is not a style choice. */
+.field input,
+.select,
+.date-input,
+.task-input {
+  font-size: 16px;
+  min-height: var(--tap-min, 44px);
+}
+
+/* Touch targets. */
+.btn-primary,
+.btn-ghost,
+.method,
+.filter-btn,
+.lang-btn,
+.navlink {
+  min-height: var(--tap-min, 44px);
+}
+
+.stepper button { width: 44px; height: 44px; }
+
+/* --- verification form: single column below 768px ------------------------ */
+.field-row { grid-template-columns: 1fr; }
+
+@media (min-width: 768px) {
+  .field-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* --- menu: 1 column, 2 from 480px, 3 from 768px -------------------------- */
+.dishes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 480px) { .dishes { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 768px) { .dishes { grid-template-columns: repeat(3, 1fr); } }
+
+/* Each dish becomes a self-contained card so it can sit in a grid cell
+   at any of the three widths without its price row colliding. */
+.dish {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.dish-side {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+/* --- totals stay legible at 320px ---------------------------------------
+   This block proves the business logic, so it is the one that must not
+   break: the label wraps, the figure never does. */
+.totals div { gap: 0.5rem; align-items: baseline; }
+.totals dt { min-width: 0; overflow-wrap: anywhere; }
+.totals dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 360px) {
+  .totals dt { font-size: 0.78rem; }
+  .totals .grand dt { font-size: 0.9rem; }
+  .totals .grand dd { font-size: 1.05rem; }
+  .cart-inner { padding-left: var(--gutter, 20px); padding-right: var(--gutter, 20px); }
+}
+
+/* The language toggle must stay reachable without opening any menu. */
+@media (max-width: 720px) {
+  .topbar-actions { flex-wrap: wrap; }
+  .lang-toggle { order: -1; }
+}

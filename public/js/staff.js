@@ -231,7 +231,146 @@
       return;
     }
 
-    for (const order of list) grid.appendChild(renderOrderTile(order));
+    grid.appendChild(buildBoardTable(list));
+  }
+
+  const BOARD_COLUMNS = ['Room', 'Guest', 'Meal', 'Items', 'Total', 'Payment', 'Kitchen', 'Action'];
+
+  /**
+   * One semantic table serves every width.
+   *
+   * Above 768px it renders as a table, which is what the board actually is.
+   * Below that, CSS re-flows the same rows into cards using the data-label
+   * on each cell — so a phone reads stacked cards instead of scrolling a
+   * table sideways, without maintaining two DOM trees that can drift apart.
+   */
+  function buildBoardTable(list) {
+    const wrap = document.createElement('div');
+    wrap.className = 'scroll-x';
+
+    const table = document.createElement('table');
+    table.className = 'board-table';
+
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    for (const label of BOARD_COLUMNS) {
+      const th = document.createElement('th');
+      th.setAttribute('scope', 'col');
+      th.textContent = label;
+      headRow.appendChild(th);
+    }
+    thead.appendChild(headRow);
+
+    const tbody = document.createElement('tbody');
+    for (const order of list) tbody.appendChild(buildBoardRow(order));
+
+    table.append(thead, tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  function buildBoardRow(order) {
+    const row = document.createElement('tr');
+    row.className =
+      (order.status === 'awaiting_cash' ? 'pending ' : '') +
+      (order.status === 'cancelled' ? 'cancelled' : '');
+
+    let column = 0;
+    const cell = (content, className) => {
+      const td = document.createElement('td');
+      td.setAttribute('data-label', BOARD_COLUMNS[column++]);
+      if (className) td.className = className;
+      if (content != null) {
+        if (typeof content === 'string') td.textContent = content;
+        else td.appendChild(content);
+      }
+      row.appendChild(td);
+      return td;
+    };
+
+    cell(order.room, 'cell-room');
+    cell(order.guestName, 'cell-guest');
+
+    const meal = document.createElement('div');
+    const mealName = document.createElement('span');
+    mealName.textContent = MEAL_LABEL[order.meal];
+    const mealMeta = document.createElement('small');
+    mealMeta.textContent = `${clockTime(order.createdAt)} · ${order.publicId}`;
+    meal.append(mealName, mealMeta);
+    cell(meal, 'cell-meal');
+
+    const items = document.createElement('ul');
+    items.className = 'cell-items';
+    for (const item of order.items) {
+      const li = document.createElement('li');
+      const n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = `${item.qty}×`;
+      li.append(n, document.createTextNode(item.titleEn));
+      items.appendChild(li);
+    }
+    if (order.note) {
+      const li = document.createElement('li');
+      li.className = 'cell-note';
+      li.textContent = `Note: ${order.note}`;
+      items.appendChild(li);
+    }
+    cell(items, 'cell-itemlist');
+
+    cell(order.totalDisplay, 'cell-total');
+
+    const payment = document.createElement('span');
+    if (order.paymentMethod === 'card') {
+      payment.className = 'hint';
+      payment.textContent = `Card •••• ${order.cardLast4 ?? '····'}`;
+    } else if (order.voucherToken && order.status !== 'paid') {
+      payment.className = 'voucher-code';
+      payment.textContent = order.voucherToken;
+    } else {
+      payment.className = 'hint';
+      payment.textContent = 'Cash — settled';
+    }
+    cell(payment, 'cell-payment');
+
+    const flag = document.createElement('span');
+    flag.className = 'queue-flag ' + (order.inKitchenQueue ? 'in' : 'out');
+    flag.textContent = order.inKitchenQueue ? 'In queue' : 'Held — unpaid';
+    cell(flag, 'cell-queue');
+
+    // Only reception and managers can take money; the control is hidden for
+    // everyone else, and the server enforces the same rule regardless.
+    const canSettle = ['reception', 'manager'].includes(state.staff?.role);
+
+    if (order.status === 'awaiting_cash' && canSettle) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-primary';
+      btn.textContent = 'Mark cash received';
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        btn.textContent = 'Recording…';
+        try {
+          await api('POST', `/api/staff/orders/${order.publicId}/settle-cash`);
+          toast(`${order.publicId} settled — released to the kitchen.`);
+          await loadBoard();
+        } catch (err) {
+          if (!err.handled) toast('Could not settle that order.');
+          btn.disabled = false;
+          btn.textContent = 'Mark cash received';
+        }
+      });
+      cell(btn, 'cell-action');
+    } else if (order.status === 'paid') {
+      const receipt = document.createElement('a');
+      receipt.className = 'btn-link';
+      receipt.href = `/api/staff/orders/${order.publicId}/receipt.pdf`;
+      receipt.setAttribute('download', '');
+      receipt.textContent = 'Receipt';
+      cell(receipt, 'cell-action');
+    } else {
+      cell('', 'cell-action');
+    }
+
+    return row;
   }
 
   function buildExportBar() {
@@ -258,107 +397,6 @@
 
     bar.append(hint, btn);
     return bar;
-  }
-
-  function renderOrderTile(order) {
-    const tile = document.createElement('article');
-    tile.className = 'order-tile' +
-      (order.status === 'awaiting_cash' ? ' pending' : '') +
-      (order.status === 'cancelled' ? ' cancelled' : '');
-
-    const head = document.createElement('div');
-    head.className = 'tile-head';
-
-    const room = document.createElement('span');
-    room.className = 'tile-room';
-    room.textContent = order.room;
-
-    const guest = document.createElement('span');
-    guest.className = 'tile-guest';
-    guest.textContent = order.guestName;
-
-    const total = document.createElement('span');
-    total.className = 'tile-total';
-    total.textContent = order.totalDisplay;
-
-    head.append(room, guest, total);
-
-    const meal = document.createElement('div');
-    meal.className = 'tile-meal';
-    meal.textContent = `${MEAL_LABEL[order.meal]} · ordered ${clockTime(order.createdAt)} · ${order.publicId}`;
-
-    const items = document.createElement('ul');
-    items.className = 'tile-items';
-    for (const item of order.items) {
-      const li = document.createElement('li');
-      const n = document.createElement('span');
-      n.className = 'n';
-      n.textContent = `${item.qty}×`;
-      li.append(n, document.createTextNode(item.titleEn));
-      items.appendChild(li);
-    }
-
-    tile.append(head, meal, items);
-
-    if (order.note) {
-      const note = document.createElement('div');
-      note.className = 'tile-note';
-      note.textContent = `Note: ${order.note}`;
-      tile.appendChild(note);
-    }
-
-    const foot = document.createElement('div');
-    foot.className = 'tile-foot';
-
-    const flag = document.createElement('span');
-    flag.className = 'queue-flag ' + (order.inKitchenQueue ? 'in' : 'out');
-    flag.textContent = order.inKitchenQueue ? 'In kitchen queue' : 'Held — unpaid';
-    foot.appendChild(flag);
-
-    if (order.paymentMethod === 'card') {
-      const card = document.createElement('span');
-      card.className = 'hint';
-      card.textContent = `Card •••• ${order.cardLast4 ?? '····'}`;
-      foot.appendChild(card);
-    } else if (order.voucherToken && order.status !== 'paid') {
-      const code = document.createElement('span');
-      code.className = 'voucher-code';
-      code.textContent = order.voucherToken;
-      foot.appendChild(code);
-    }
-
-    // Only reception and managers can take money; the button is hidden for
-    // everyone else, and the server enforces the same rule regardless.
-    const canSettle = ['reception', 'manager'].includes(state.staff?.role);
-    if (order.status === 'awaiting_cash' && canSettle) {
-      const btn = document.createElement('button');
-      btn.className = 'btn-primary';
-      btn.textContent = 'Mark cash received';
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        btn.textContent = 'Recording…';
-        try {
-          await api('POST', `/api/staff/orders/${order.publicId}/settle-cash`);
-          toast(`${order.publicId} settled — released to the kitchen.`);
-          await loadBoard();
-        } catch (err) {
-          if (!err.handled) toast('Could not settle that order.');
-          btn.disabled = false;
-          btn.textContent = 'Mark cash received';
-        }
-      });
-      foot.appendChild(btn);
-    } else if (order.status === 'paid') {
-      const receipt = document.createElement('a');
-      receipt.className = 'btn-link';
-      receipt.href = `/api/staff/orders/${order.publicId}/receipt.pdf`;
-      receipt.setAttribute('download', '');
-      receipt.textContent = 'Receipt';
-      foot.appendChild(receipt);
-    }
-
-    tile.appendChild(foot);
-    return tile;
   }
 
   // -------------------------------------------------------------------------
