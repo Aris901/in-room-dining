@@ -47,8 +47,23 @@ ${withoutExports}
 `;
 }
 
+// walkthrough.html is produced by scripts/capture-walkthrough.js, which needs
+// a browser and about forty seconds. It is not rebuilt here, so carry it
+// across the wipe rather than making every demo build regenerate it.
+const KEEP = ['walkthrough.html'];
+const kept = new Map();
+for (const name of KEEP) {
+  const from = path.join(docs, name);
+  if (fs.existsSync(from)) kept.set(name, fs.readFileSync(from));
+}
+
 fs.rmSync(docs, { recursive: true, force: true });
 fs.mkdirSync(docs, { recursive: true });
+
+for (const [name, buf] of kept) {
+  fs.writeFileSync(path.join(docs, name), buf);
+  console.log(`  ${name}  ${(buf.length / 1024).toFixed(0)} KB (kept)`);
+}
 
 // ---- shared domain logic -------------------------------------------------
 write('js/domain/time.js', toBrowserGlobal(read('src', 'time.js'), 'DiningTime'));
