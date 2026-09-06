@@ -2,14 +2,69 @@
 
 const fs = require('fs');
 const path = require('path');
-const Database = require('better-sqlite3');
 const { config } = require('./config');
+
+/**
+ * Driver selection.
+ *
+ * better-sqlite3 is the default and what the tests run against. libsql is the
+ * same API over a file that can also be an embedded replica of a Turso
+ * database, which is how this gets a persistent database on a host with no
+ * disk. Selected by DB_DRIVER so the swap is one environment variable rather
+ * than a fork of the code.
+ */
+const Database = config.dbDriver === 'libsql'
+  ? require('libsql')
+  : require('better-sqlite3');
 
 fs.mkdirSync(config.paths.data, { recursive: true });
 
-const db = new Database(config.paths.db);
+/**
+ * Three ways to open the database, in order of preference on a host:
+ *
+ *  1. embedded replica — a local file kept in sync with a Turso database.
+ *     Reads and writes are local-speed; the durable copy lives at Turso, so
+ *     the host needs no disk at all. This is what makes a free tier work.
+ *  2. remote — every query goes to Turso. Simpler, but a network round trip
+ *     per query, and this app makes several per request.
+ *  3. plain local file — development, and the tests.
+ */
+function openDatabase() {
+  const { syncUrl, databaseUrl, authToken } = config.turso;
 
-db.pragma('journal_mode = WAL');
+  if (config.dbDriver === 'libsql' && syncUrl) {
+    return new Database(config.paths.db, { syncUrl, authToken });
+  }
+  if (config.dbDriver === 'libsql' && databaseUrl) {
+    return new Database(databaseUrl, { authToken });
+  }
+  return new Database(config.paths.db);
+}
+
+const db = openDatabase();
+
+/**
+ * An embedded replica only sees remote changes when it pulls them. This app is
+ * the single writer, so its own writes are already local — the pull matters
+ * on a cold start, where the local file is empty and everything must come
+ * down from Turso, and as a safety net if a second instance ever appears.
+ */
+let syncTimer = null;
+if (config.turso.syncUrl && config.turso.syncIntervalSeconds > 0) {
+  try {
+    db.sync();
+  } catch (err) {
+    // A first boot with no remote data yet is not a failure.
+    console.warn('[db] initial sync failed:', err.message);
+  }
+  syncTimer = setInterval(() => {
+    try { db.sync(); } catch (err) { console.warn('[db] sync failed:', err.message); }
+  }, config.turso.syncIntervalSeconds * 1000);
+  syncTimer.unref();
+}
+
+// WAL is a local-file concept; a remote Turso database has no journal to set.
+if (!config.turso.databaseUrl) db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 /**

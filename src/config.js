@@ -87,6 +87,18 @@ const config = {
    * not sleep would be its own small untruth.
    */
   hostSleeps: process.env.HOST_SLEEPS === 'on',
+
+  // 'libsql' swaps in the Turso-compatible driver. Same synchronous API.
+  dbDriver: process.env.DB_DRIVER === 'libsql' ? 'libsql' : 'better-sqlite3',
+  turso: {
+    // Set one of these, not both. syncUrl keeps a local replica; databaseUrl
+    // talks to Turso directly.
+    syncUrl: process.env.TURSO_SYNC_URL || '',
+    databaseUrl: process.env.TURSO_DATABASE_URL || '',
+    authToken: process.env.TURSO_AUTH_TOKEN || '',
+    // How often the replica pulls remote changes, in seconds. 0 disables it.
+    syncIntervalSeconds: Number(process.env.TURSO_SYNC_SECONDS ?? 60),
+  },
 };
 
 /** Refuse to start in production with development secrets in place. */
