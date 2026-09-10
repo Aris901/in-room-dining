@@ -145,6 +145,7 @@ changes a config file rather than the application.
 | `DEMO_RESET` | no | `off` | `on` wipes and re-seeds the database once a day. |
 | `DEMO_RESET_HOUR` | no | `4` | Hour (hotel time) the reset runs. |
 | `HOST_SLEEPS` | no | `off` | `on` shows visitors a cold-start notice. Set it only if your host actually sleeps. |
+| `MAX_ORDERS` | no | `200` | Ceiling on stored orders; the oldest beyond it are dropped. `0` disables the cap, which is the correct setting for a real hotel. |
 | `NODE_ENV` | — | — | Set to `production` by the Dockerfile. |
 
 Generate the two secrets:
@@ -232,6 +233,39 @@ that passes.
 
 ---
 
+## 6a. Leaving it open to strangers
+
+The public instance is reachable by anyone, so four things hold it steady.
+
+**Payments are simulated and say so.** `src/services/payment-gateway.js` has no
+provider behind it, the guest app carries a permanent banner reading *"Demo ·
+Simulated payments — never enter real card details"*, and the test cards are
+listed on the payment step. No column in the schema stores a card number,
+expiry or CVV.
+
+**Credentials are published, deliberately.** The staff login lists all three
+accounts, and the guest form fills itself from `/api/demo-guest`. That is the
+point of a demo — but it is also why `DEMO_MODE=off` is not optional for a
+real hotel. With it off, `/api/demo-guest` returns 404.
+
+**Order creation is rate limited** to `20` per minute per address
+(`src/routes/guest.js`), alongside `10` guest logins per ten minutes and `8`
+staff logins per fifteen.
+
+**Orders are capped.** Past `MAX_ORDERS` the oldest are dropped, line items
+following them by `ON DELETE CASCADE`. The prune runs *after* the order
+commits, never inside its transaction — a housekeeping failure must not roll
+back a guest's order. `tests/order-cap.test.js` covers it.
+
+Every seeded guest is invented. The demo hands one guest's details to anyone
+who clicks "Fill demo guest", so no real person's name or number is in there.
+
+`audit_log` is not capped. With `DEMO_RESET=on` the daily wipe bounds it; with
+the reset off it grows. **TODO:** cap it too if this ever runs without the
+daily reset.
+
+---
+
 ## 7. Things that are deliberately not here
 
 - **Real payments.** The gateway in `src/services/payment-gateway.js` is
@@ -248,8 +282,8 @@ that passes.
 ## 8. Local check before you push
 
 ```bash
-npm test                  # 56 tests
-DB_DRIVER=libsql npm test # the same 56, on the Turso driver
+npm test                  # 63 tests
+DB_DRIVER=libsql npm test # the same 63, on the Turso driver
 npm run seed
 npm start
 ```

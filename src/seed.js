@@ -22,9 +22,12 @@ const STAFF = [
   { username: 'manager', password: 'manage1234', display_name: 'Dmitry Volkov', role: 'manager' },
 ];
 
+// Every guest here is invented. The demo is public and its login screen
+// hands these details to anyone who asks, so a real person's name and phone
+// number have no business in it — not even mine.
 const STAYS = [
   {
-    full_name: 'Ariel Kalambay',
+    full_name: 'Daniel Okonkwo',
     room_number: '412',
     phone: '+7 495 555-01-42',
     check_in: timeUtil.addDays(today, -1),

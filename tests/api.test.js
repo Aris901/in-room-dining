@@ -23,7 +23,7 @@ for (const suffix of ['', '-wal', '-shm']) {
 
 const app = require('../server');
 const { db } = require('../src/db');
-const { seed } = require('../src/seed');
+const { seed, STAYS } = require('../src/seed');
 const timeUtil = require('../src/time');
 const { config } = require('../src/config');
 
@@ -77,17 +77,21 @@ function makeClient() {
   };
 }
 
-const ARIEL = {
-  fullName: 'Ariel Kalambay',
-  roomNumber: '412',
-  phone: '+7 495 555-01-42',
-  checkIn: timeUtil.addDays(today, -1),
-  checkOut: timeUtil.addDays(today, 4),
+// Read from the seed rather than restated here. A copy of these five fields
+// in the test is a second source of truth that goes stale the moment the seed
+// changes — which is exactly what happened when the guest was renamed.
+const seedGuest = STAYS[0];
+const GUEST = {
+  fullName: seedGuest.full_name,
+  roomNumber: seedGuest.room_number,
+  phone: seedGuest.phone,
+  checkIn: seedGuest.check_in,
+  checkOut: seedGuest.check_out,
 };
 
 async function loginGuest(overrides = {}) {
   const call = makeClient();
-  const res = await call('POST', '/api/guest/login', { ...ARIEL, ...overrides });
+  const res = await call('POST', '/api/guest/login', { ...GUEST, ...overrides });
   return { call, res };
 }
 

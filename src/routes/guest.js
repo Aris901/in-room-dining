@@ -3,6 +3,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
+const orderCap = require('../order-cap');
 
 const { config } = require('../config');
 const { db } = require('../db');
@@ -327,6 +328,10 @@ router.post('/orders', auth.requireGuest, orderLimiter, (req, res) => {
   });
 
   write();
+
+  // After the order is committed, never before: a failed prune must not take
+  // a guest's order down with it.
+  orderCap.pruneQuietly();
 
   res.status(201).json({
     order: serialiseOrder(loadOrder(publicId, stay.id)),

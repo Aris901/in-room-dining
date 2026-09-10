@@ -88,6 +88,13 @@ const config = {
    */
   hostSleeps: process.env.HOST_SLEEPS === 'on',
 
+  /**
+   * Ceiling on stored orders for the public instance. Beyond it the oldest
+   * are dropped. 0 disables the cap entirely, which is the right setting for
+   * a real hotel — this exists because the demo is open to strangers.
+   */
+  maxOrders: Number(process.env.MAX_ORDERS ?? 200),
+
   // 'libsql' swaps in the Turso-compatible driver. Same synchronous API.
   dbDriver: process.env.DB_DRIVER === 'libsql' ? 'libsql' : 'better-sqlite3',
   turso: {
