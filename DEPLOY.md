@@ -180,12 +180,29 @@ fly secrets set SESSION_SECRET=... STAFF_SESSION_SECRET=...
 fly deploy
 ```
 
-### Render, Starter or above
+### Render, free, with Turso
 
-`render.yaml` is in the repo. Point a new Blueprint at it. It declares a 1 GB
-disk at `/data` and generates both secrets. It specifies **Starter**
-deliberately: Render's free plan has no disk, so on Free the data disappears
-on every deploy.
+`render.yaml` is in the repo and is written for the free plan. Point a new
+Blueprint at it. It sets `DB_DRIVER=libsql`, puts the embedded replica's cache
+at `/tmp` (throwaway on purpose — the durable copy is at Turso), generates both
+session secrets, and declares **no disk**, because the free plan cannot have
+one.
+
+Two values are marked `sync: false` and Render will prompt for them on the
+first deploy. Do §2a first so you have them:
+
+| Prompt | Value |
+| --- | --- |
+| `TURSO_SYNC_URL` | `libsql://<your-database>.turso.io` |
+| `TURSO_AUTH_TOKEN` | output of `turso db tokens create <your-database>` |
+
+The blueprint also sets `HOST_SLEEPS=on`, which is true of Render's free plan:
+it sleeps after roughly 15 minutes idle and takes about 40 seconds to wake. The
+UI says so, so a cold start reads as starting up rather than broken.
+
+If you would rather pay and keep SQLite on a real disk, use Starter (~$7/mo)
+and follow §2b instead — drop the Turso variables, set `DB_PATH=/data/dining.db`
+and attach a 1 GB disk at `/data`.
 
 ---
 
