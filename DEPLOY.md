@@ -164,12 +164,23 @@ repository. Rotating either is safe — it only invalidates open sessions.
 ### Any free host + Turso (recommended)
 
 1. Do §2a first and keep the URL and token to hand.
-2. Create a service from this repository, builder **Dockerfile**.
-3. Expose port `3000`, public.
-4. Health check: HTTP `GET /health`.
-5. Environment: everything from §3, including `DB_DRIVER=libsql`, the Turso
+2. Check the pair actually holds data before anything depends on it:
+
+   ```bash
+   TURSO_SYNC_URL=libsql://<db>.turso.io TURSO_AUTH_TOKEN=... npm run check:turso
+   ```
+
+   It writes through one embedded replica and reads the row back through a
+   second one on a different local file. The second has never seen the first's
+   disk, so a pass means the row genuinely reached Turso — which is the same
+   thing that has to happen for an order to survive a redeploy. It drops its
+   own table afterwards and never touches application data.
+3. Create a service from this repository, builder **Dockerfile**.
+4. Expose port `3000`, public.
+5. Health check: HTTP `GET /health`.
+6. Environment: everything from §3, including `DB_DRIVER=libsql`, the Turso
    pair, and `HOST_SLEEPS=on` if the host sleeps when idle.
-6. **No volume needed.** That is the point.
+7. **No volume needed.** That is the point.
 
 ### Fly.io, with a volume
 
