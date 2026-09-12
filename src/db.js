@@ -17,7 +17,24 @@ const Database = config.dbDriver === 'libsql'
   ? require('libsql')
   : require('better-sqlite3');
 
-fs.mkdirSync(config.paths.data, { recursive: true });
+/**
+ * Make sure the directory the database will actually live in exists.
+ *
+ * Derived from DB_PATH, not from a fixed location. config.paths.data is only
+ * where the file sits by default; DB_PATH can point anywhere, and on a host
+ * it usually points at a mounted volume outside the application directory.
+ * Creating <app>/data in that case is both useless and fatal — the app
+ * directory is frequently not writable, and this runs at import time, before
+ * anything is listening. It is the first thing that breaks on a read-only
+ * filesystem, and it broke the container image exactly this way.
+ *
+ * Skipped entirely when there is no local file: an in-memory database, or a
+ * Turso connection that talks to the remote directly.
+ */
+const usesLocalFile = config.paths.db !== ':memory:' && !config.turso.databaseUrl;
+if (usesLocalFile) {
+  fs.mkdirSync(path.dirname(config.paths.db), { recursive: true });
+}
 
 /**
  * Three ways to open the database, in order of preference on a host:

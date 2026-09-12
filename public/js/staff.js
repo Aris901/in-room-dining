@@ -549,6 +549,13 @@
 
       $('#staffName').textContent = session.staff.name;
       $('#staffRole').textContent = session.staff.role;
+
+      // Menus belong to the chef and the manager. Reception was being shown
+      // the tab and got a 403 on opening it — the server guard was right, the
+      // interface was offering something it knew would fail.
+      const mayEditMenus = ['chef', 'manager'].includes(session.staff.role);
+      const menusTab = document.querySelector('.navlink[data-view="menus"]');
+      if (menusTab) menusTab.hidden = !mayEditMenus;
       $('#boardDate').value = session.today;
       $('#menuDate').value = session.today;
 

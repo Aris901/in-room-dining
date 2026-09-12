@@ -52,7 +52,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && mkdir -p /data \
  && chown -R node:node /data
 
+# Own the directory itself, not only its contents. A COPY --chown sets the
+# files; /app was created by WORKDIR as root, so anything writing inside it
+# at runtime hits EACCES.
 COPY --from=build --chown=node:node /app /app
+RUN chown node:node /app
 
 # The mount point for the persistent volume. SQLite is a file: without a real
 # disk here the database is wiped on every redeploy.
